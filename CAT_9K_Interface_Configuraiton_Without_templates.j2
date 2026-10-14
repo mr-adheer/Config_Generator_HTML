@@ -1,0 +1,96 @@
+!=======================================================================================================
+!                               INTERFACE CONFIGURATION EXAMPLE (WITHOUT TEMPLATES)
+!=======================================================================================================
+!
+!==================================== ACCESS_PORT_CONFIG EXAMPLE =======================================
+!
+interface range {{ ACCESS_INTERFACE_RANGE }}
+ description -> ACCESS --> <Endpoint_Type>
+    ! example: description -> ACCESS --> USER
+    ! example: description -> ACCESS --> PRINTER
+    ! example: description -> ACCESS --> DNS_SERVER
+    ! example: description -> ACCESS --> MPLS_RTR1 | 10.1.1.1 -> G0/0
+ switchport nonegotiate
+ switchport mode access
+ switchport access vlan {{ SWITCHPORT_ACCESS_VLAN_ID }}
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+ load-interval 60
+ storm-control broadcast level 1
+ storm-control multicast level 1
+ storm-control action trap
+ switchport port-security
+ switchport port-security maximum 3
+ switchport port-security aging time 2
+ switchport port-security aging type inactivity
+ switchport port-security violation restrict
+ device-tracking attach-policy IPDT_POLICY
+ ip dhcp snooping limit rate 15
+ no snmp trap link-status
+ source template ACCESS_DOT1X_MAB_CLOSED  !REMOVE THIS IF WIRED 802.1X IS NOT CONFIGURED IN THE NETWORK
+!
+!
+!
+!
+!===================== UPLINK_PORT_CONFIG EXAMPLE =====================
+!
+interface {{ TRUNK_INTERFACE_NAME }}
+ description ** <LinkType> -->  <Neighbor_Name> | <Neighbor_IP> -> <Neighbor_Interface>
+    ! example : description  ** TRUNK --> 3RDFLR_SW | 10.10.10.2 -> Gig1/0/2
+ switchport mode trunk
+ switchport trunk allowed vlan {{ UPLINK_PORT_ALLOWED_VLAN_LIST }}
+ switchport nonegotiate
+ storm-control broadcast level 10
+ storm-control multicast level 10
+ storm-control action trap
+ spanning-tree guard loop
+ load-interval 60
+ udld mode aggressive
+ ip dhcp snooping trust
+!
+!
+!
+!===== AP_PORT_CONFIG EXAMPLE =====
+!
+interface range {{ AP_INTERFACE_NAME }}
+ description {{ AP_PORT_DESCRIPTION }}
+    ! example : description  ** TRUNK --> 2F_AP02 | 10.10.10.10
+ switchport nonegotiate
+ switchport trunk allowed vlan {{ AP_TRUNK_ALLOWED_VLAN_LIST }}
+ switchport trunk native vlan {{ AP_MGMT_VLAN }}
+ storm-control broadcast level 20
+ storm-control multicast level 20
+ storm-control action trap
+!
+!
+!
+!========= PORT CHANNEL CONFIG EXAMPLE =========
+!
+interface range {{ PORTCHANNEL_PHY_PORT_RANGE }}
+ description {{ PORTCHANNEL_DESCRIPTION }}
+    ! example : description  ** TRUNK --> 3RDFLR_SW | 10.10.10.2 -> Gig1/0/2
+ udld mode aggressive
+ channel-group {{ CHANNEL_GROUP_NUMBER }} mode active
+!
+interface range Gigabit0/26
+ description {{ PORTCHANNEL_DESCRIPTION }}
+    ! example : description  ** TRUNK --> 3RDFLR_SW | 10.10.10.2 -> Gig1/0/3
+ udld mode aggressive
+ channel-group {{ CHANNEL_GROUP_NUMBER }} mode active
+!
+!
+interface port-channel {{ CHANNEL_GROUP_NUMBER }}
+ description  {{ PORTCHANNEL_DESCRIPTION }}
+    ! example : description  ** TRUNK --> 3RDFLR_SW | 10.10.10.2 -> PO-10
+ source template TRUNK_UPLINK
+ switchport mode trunk
+ switchport trunk allowed vlan {{ UPLINK_PORT_ALLOWED_VLAN_LIST }}
+ switchport nonegotiate
+ storm-control broadcast level 10
+ storm-control multicast level 10
+ storm-control action trap
+ spanning-tree guard loop
+ ip dhcp snooping trust
+ load-interval 60
+ udld mode aggressive
+

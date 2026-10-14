@@ -1,0 +1,65 @@
+!==================== TEMPLATE VARIABLES (defaults) ====================
+{%- set TACACS_SRV_1_IP = TACACS_SRV_1_IP | default('10.11.1.1') -%}
+{%- set TACACS_PSK = TACACS_PSK | default('tacacspass') -%}
+{%- set TACACS_SRV_2_IP = TACACS_SRV_2_IP | default('10.11.1.2') -%}
+{%- set MGMT_VLAN_ID = MGMT_VLAN_ID | default('100') -%}
+!=========================================================================
+!
+!========================================================================================================
+!                                         TACACS+
+!========================================================================================================
+aaa new-model
+aaa session-id common
+!
+tacacs server TACACS_{{ TACACS_SRV_1_IP }}
+ address ipv4 {{ TACACS_SRV_1_IP }}
+ key {{ TACACS_PSK }}
+ timeout 4
+ single-connection
+ exit
+!
+tacacs server TACACS_{{ TACACS_SRV_2_IP }}
+ address ipv4 {{ TACACS_SRV_2_IP }}
+ key {{ TACACS_PSK }}
+ timeout 4
+ single-connection
+ exit
+!
+!
+aaa group server tacacs+ TACACS_GRP
+ server name TACACS_{{ TACACS_SRV_1_IP }}
+ server name TACACS_{{ TACACS_SRV_2_IP }}
+ exit
+!
+!
+ip tacacs source-interface vlan {{ MGMT_VLAN_ID }}
+!
+aaa authentication fail-message  * LOGIN FAILED *
+aaa authentication login default local
+aaa authentication login TACACS_AUTHEN group TACACS_GRP local
+aaa authentication enable default group TACACS_GRP enable
+aaa authorization config-commands
+aaa authorization exec default local
+aaa authorization exec TACACS_AUTHOR group TACACS_GRP local if-authenticated
+aaa authorization commands 15 TACACS_CMDS group TACACS_GRP local if-authenticated
+aaa authorization commands 7 TACACS_CMDS group TACACS_GRP local if-authenticated
+aaa accounting update newinfo periodic 2880
+aaa accounting exec default start-stop group TACACS_GRP
+aaa accounting commands 15 default start-stop group TACACS_GRP
+aaa accounting commands 7 default start-stop group TACACS_GRP
+aaa authorization console
+aaa login display number-failures
+aaa login success-track-conf-time 1
+!
+line vty 0 15
+ access-class MGMT_ACL in vrf-also
+ login authentication TACACS_AUTHEN
+ authorization commands 15 TACACS_CMDS
+ authorization commands 7 TACACS_CMDS
+ authorization exec TACACS_AUTHOR
+ transport preferred none
+ transport input ssh
+ transport output none
+ exec-timeout 5 0
+ logging synchronous
+ exit

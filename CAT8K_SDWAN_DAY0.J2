@@ -1,0 +1,113 @@
+!==================== TEMPLATE VARIABLES (defaults) ====================
+{%- set DEVICE_TYPE = DEVICE_TYPE | default('SDWAN_RTR') -%}
+{%- set HOSTNAME = HOSTNAME | default('Blr_SDWAN_RTR_1') -%}
+{%- set SYSTEM_IP = SYSTEM_IP | default('192.168.0.100') -%}
+{%- set DEVICE_MODEL = DEVICE_MODEL | default('Cat8300') -%}
+{%- set CLIENT_NAME = CLIENT_NAME | default('Client_Name') -%}
+{%- set BRANCH_NAME = BRANCH_NAME | default('BLR_Branch') -%}
+{%- set BRANCH_ID = BRANCH_ID | default('20192') -%}
+{%- set SDWAN_ORG_NAME = SDWAN_ORG_NAME | default('ORG NAME') -%}
+{%- set VBOND_FQDN = VBOND_FQDN | default('VBOND.CISCO.COM') -%}
+{%- set DNS_SERVER_1_IP = DNS_SERVER_1_IP | default('8.8.8.8') -%}
+{%- set DNS_SERVER_2_IP = DNS_SERVER_2_IP | default('1.1.1.1') -%}
+{%- set WAN_ISP_INTERFACE_NAME = WAN_ISP_INTERFACE_NAME | default('GigabitEthernet0/0') -%}
+{%- set WAN_ISP_INTERFACE_DESCRIPTION = WAN_ISP_INTERFACE_DESCRIPTION | default('AIRTEL 100MPBS') -%}
+{%- set WAN_ISP_INTERFACE_IP = WAN_ISP_INTERFACE_IP | default('9.1.2.3') -%}
+{%- set WAN_ISP_INTERFACE_MASK = WAN_ISP_INTERFACE_MASK | default('255.255.255.252') -%}
+{%- set LAN_SERVICE_INTERFACE_NAME = LAN_SERVICE_INTERFACE_NAME | default('GigabitEthernet0/1') -%}
+{%- set LAN_SERVICE_INTERFACE_DESCRIPTION = LAN_SERVICE_INTERFACE_DESCRIPTION | default('LAN TO CORE SWITCH') -%}
+{%- set LAN_SERVICE_INTERFACE_IP = LAN_SERVICE_INTERFACE_IP | default('10.1.1.1') -%}
+{%- set LAN_SERVICE_INTERFACE_MASK = LAN_SERVICE_INTERFACE_MASK | default('255.255.255.0') -%}
+{%- set TLOC_TUNNEL_INTERFACE_NAME = TLOC_TUNNEL_INTERFACE_NAME | default('GigabitEthernet0/2') -%}
+{%- set TLOC_TUNNEL_INTERFACE_DESCRIPTION = TLOC_TUNNEL_INTERFACE_DESCRIPTION | default('TUNNEL TLOC ROUTER 2') -%}
+{%- set TLOC_TUNNEL_INTERFACE_IP = TLOC_TUNNEL_INTERFACE_IP | default('192.168.1.1') -%}
+{%- set TLOC_TUNNEL_INTERFACE_MASK = TLOC_TUNNEL_INTERFACE_MASK | default('255.255.255.252') -%}
+{%- set TLOC_INTERFACE_NAME = TLOC_INTERFACE_NAME | default('GigabitEthernet0/4') -%}
+{%- set TLOC_INTERFACE_DESCRIPTION = TLOC_INTERFACE_DESCRIPTION | default('TLOC ROUTER 2') -%}
+{%- set TLOC_INTERFACE_IP = TLOC_INTERFACE_IP | default('192.168.2.1') -%}
+{%- set TLOC_INTERFACE_MASK = TLOC_INTERFACE_MASK | default('255.255.255.252') -%}
+{%- set WAN_ISP_DEFAULT_ROUTE = WAN_ISP_DEFAULT_ROUTE | default('9.1.2.1') -%}
+{%- set WAN_TLOC_DEFAULT_ROUTE = WAN_TLOC_DEFAULT_ROUTE | default('192.168.1.2') -%}
+{%- set LOCAL_BGP_ASN = LOCAL_BGP_ASN | default('9999') -%}
+{%- set ISP_BGP_PEER_IP = ISP_BGP_PEER_IP | default('9.1.2.1') -%}
+{%- set ISP_BGP_REMOTE_ASN = ISP_BGP_REMOTE_ASN | default('8888') -%}
+{%- set BGP_NETWORK_IP = BGP_NETWORK_IP | default('10.1.1.0') -%}
+{%- set BGP_NETWORK_MASK = BGP_NETWORK_MASK | default('255.255.255.0') -%}
+{%- set TRANSPORT_COLOUR = TRANSPORT_COLOUR | default('public internet') -%}
+!=========================================================================
+!
+!================================================================================================================
+!               {{ DEVICE_TYPE }} -- {{ HOSTNAME }} -- {{ SYSTEM_IP }}
+!
+!            {{ DEVICE_MODEL }} CONFIGURAITON SCRIPT FOR {{ CLIENT_NAME }}
+!             BRANCH NAME = {{ BRANCH_NAME }} , BRANCH ID = {{ BRANCH_ID }}
+!
+!================================================================================================================
+!
+! request platform software sdwan config reset
+!
+!==========================================================
+! Default login: admin/admin -- change to Admin@123 on first login
+!==========================================================
+!
+pnpa service discovery stop
+
+config-transaction
+
+service unsupported-transceiver
+commit
+
+hostname {{ HOSTNAME }}
+
+system
+ system-ip {{ SYSTEM_IP }}
+ site-id 14
+ organization-name {{ SDWAN_ORG_NAME }}
+ sp-organization-name {{ SDWAN_ORG_NAME }}
+ vbond {{ VBOND_FQDN }}
+
+ip name-server {{ DNS_SERVER_1_IP }} {{ DNS_SERVER_2_IP }}
+
+interface {{ WAN_ISP_INTERFACE_NAME }}
+ description {{ WAN_ISP_INTERFACE_DESCRIPTION }}
+ ip address {{ WAN_ISP_INTERFACE_IP }} {{ WAN_ISP_INTERFACE_MASK }}
+ no shut
+
+interface {{ LAN_SERVICE_INTERFACE_NAME }}
+ description {{ LAN_SERVICE_INTERFACE_DESCRIPTION }}
+ ip address {{ LAN_SERVICE_INTERFACE_IP }} {{ LAN_SERVICE_INTERFACE_MASK }}
+ no shutdown
+
+interface {{ TLOC_TUNNEL_INTERFACE_NAME }}
+ description {{ TLOC_TUNNEL_INTERFACE_DESCRIPTION }}
+ ip address {{ TLOC_TUNNEL_INTERFACE_IP }} {{ TLOC_TUNNEL_INTERFACE_MASK }}
+ no shut
+
+interface {{ TLOC_INTERFACE_NAME }}
+ description {{ TLOC_INTERFACE_DESCRIPTION }}
+ ip address {{ TLOC_INTERFACE_IP }} {{ TLOC_INTERFACE_MASK }}
+ no shut
+
+ip route 0.0.0.0 0.0.0.0 {{ WAN_ISP_DEFAULT_ROUTE }}
+ip route 0.0.0.0 0.0.0.0 {{ WAN_TLOC_DEFAULT_ROUTE }} 210
+
+router bgp {{ LOCAL_BGP_ASN }}
+ bgp log-neighbor-changes
+ neighbor {{ ISP_BGP_PEER_IP }} remote-as {{ ISP_BGP_REMOTE_ASN }}
+ address-family ipv4 unicast
+  neighbor {{ ISP_BGP_PEER_IP }} activate
+  network {{ BGP_NETWORK_IP }} MASK {{ BGP_NETWORK_MASK }}
+  exit-address-family
+
+interface Tunnel0
+  no shut
+  ip unnumbered {{ WAN_ISP_INTERFACE_NAME }}
+  tunnel source {{ WAN_ISP_INTERFACE_NAME }}
+  tunnel mode sdwan
+
+ sdwan
+  interface {{ WAN_ISP_INTERFACE_NAME }}
+  tunnel-interface
+  encapsulation ipsec
+  color {{ TRANSPORT_COLOUR }}
+  commit

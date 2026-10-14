@@ -1,0 +1,114 @@
+!==================== TEMPLATE VARIABLES (defaults) ====================
+{%- set DEVICE_TYPE = DEVICE_TYPE | default('ROUTER') -%}
+{%- set DEVICE_MODEL = DEVICE_MODEL | default('CAT8300') -%}
+{%- set ORG_NAME = ORG_NAME | default('CLIENT_NAME') -%}
+{%- set BRANCH_NAME = BRANCH_NAME | default('BLR') -%}
+{%- set BRANCH_ID = BRANCH_ID | default('10293') -%}
+{%- set SYSTEM_IP = SYSTEM_IP | default('1.1.1.21') -%}
+{%- set SDWAN_ORG_NAME = SDWAN_ORG_NAME | default('CLIENT_SDWAN') -%}
+{%- set VBOND_FQDN = VBOND_FQDN | default('VBOND.ORG.CISCO.COM') -%}
+{%- set HOSTNAME = HOSTNAME | default('C8K_HOSTNAME') -%}
+{%- set LOCAL_USER = LOCAL_USER | default('ADMINUSER') -%}
+{%- set LOCAL_SECRET = LOCAL_SECRET | default('ADMINPASS') -%}
+{%- set ENABLE_SECRET = ENABLE_SECRET | default('ENABLEPASS') -%}
+{%- set WAN_INTERFACE_1_ID = WAN_INTERFACE_1_ID | default('GigabitEthernet1/1') -%}
+{%- set WAN_INTERFACE_1_DESCRIPTION = WAN_INTERFACE_1_DESCRIPTION | default('ISP_1') -%}
+{%- set WAN_INTERFACE_1_IP = WAN_INTERFACE_1_IP | default('11.1.1.20') -%}
+{%- set WAN_INTERFACE_1_MASK = WAN_INTERFACE_1_MASK | default('255.255.255.252') -%}
+{%- set WAN_INTERFACE_2_ID = WAN_INTERFACE_2_ID | default('GigabitEthernet1/0') -%}
+{%- set WAN_INTERFACE_2_DESCRIPTION = WAN_INTERFACE_2_DESCRIPTION | default('ISP_2') -%}
+{%- set WAN_INTERFACE_2_IP = WAN_INTERFACE_2_IP | default('12.1.1.30') -%}
+{%- set WAN_INTERFACE_2_MASK = WAN_INTERFACE_2_MASK | default('255.255.255.252') -%}
+{%- set LAN_INTERFACE_1_ID = LAN_INTERFACE_1_ID | default('GigabitEthernet0/0') -%}
+{%- set LAN_INTERFACE_1_DESCRIPTION = LAN_INTERFACE_1_DESCRIPTION | default('LAN_TO_CORE_SW') -%}
+{%- set LAN_INTERFACE_1_IP = LAN_INTERFACE_1_IP | default('192.168.1.100') -%}
+{%- set LAN_INTERFACE_1_MASK = LAN_INTERFACE_1_MASK | default('255.255.255.0') -%}
+{%- set WAN_INTERFACE_1_COLOR = WAN_INTERFACE_1_COLOR | default('MPLS') -%}
+{%- set WAN_INTERFACE_2_COLOR = WAN_INTERFACE_2_COLOR | default('BIZ_INTERNET') -%}
+{%- set WAN_INTERFACE_1_GW_IP = WAN_INTERFACE_1_GW_IP | default('11.1.1.1') -%}
+{%- set WAN_INTERFACE_2_GW_IP = WAN_INTERFACE_2_GW_IP | default('12.1.1.1') -%}
+{%- set DNS_SERVER1_IP = DNS_SERVER1_IP | default('4.2.2.2') -%}
+{%- set DNS_SERVER2_IP = DNS_SERVER2_IP | default('8.8.8.8') -%}
+{%- set WAN_1_BGP_ASN = WAN_1_BGP_ASN | default('4321') -%}
+{%- set WAN_1_BGP_REMOTE_ASN = WAN_1_BGP_REMOTE_ASN | default('2932') -%}
+!=========================================================================
+!
+!================= {{ DEVICE_TYPE }} CONFIG =============================
+!   {{ DEVICE_MODEL }} CONFIGURAITON SCRIPT FOR {{ ORG_NAME }}
+!   BRANCH NAME = {{ BRANCH_NAME }} , BRANCH ID = {{ BRANCH_ID }}
+!========================================================================
+
+pnpa service discovery stop
+!
+config-transaction
+ system
+ system-ip {{ SYSTEM_IP }}
+ site-id {{ BRANCH_ID }}
+ organization-name "{{ SDWAN_ORG_NAME }}"
+ vbond {{ VBOND_FQDN }}
+!
+hostname {{ HOSTNAME }}
+!
+username {{ LOCAL_USER }} privilege 15 secret {{ LOCAL_SECRET }}
+!
+enable secret {{ ENABLE_SECRET }}
+!
+interface {{ WAN_INTERFACE_1_ID }}
+ description {{ WAN_INTERFACE_1_DESCRIPTION }}
+ ip address {{ WAN_INTERFACE_1_IP }} {{ WAN_INTERFACE_1_MASK }}
+ no shutdown
+ exit
+!
+interface {{ WAN_INTERFACE_2_ID }}
+ description {{ WAN_INTERFACE_2_DESCRIPTION }}
+ ip address {{ WAN_INTERFACE_2_IP }} {{ WAN_INTERFACE_2_MASK }}
+ no shutdown
+ exit
+!
+interface {{ LAN_INTERFACE_1_ID }}
+ description {{ LAN_INTERFACE_1_DESCRIPTION }}
+ ip address {{ LAN_INTERFACE_1_IP }} {{ LAN_INTERFACE_1_MASK }}
+ no shutdown
+ exit
+!
+interface Tunnel1
+ no shutdown
+ ip unnumbered {{ WAN_INTERFACE_1_ID }}
+ tunnel source {{ WAN_INTERFACE_1_ID }}
+ tunnel mode sdwan
+ exit
+!
+interface Tunnel2
+ no shutdown
+ ip unnumbered {{ WAN_INTERFACE_2_ID }}
+ tunnel source {{ WAN_INTERFACE_2_ID }}
+ tunnel mode sdwan
+ exit
+!
+sdwan
+ interface {{ WAN_INTERFACE_1_ID }}
+  tunnel-interface
+  encapsulation ipsec
+  color {{ WAN_INTERFACE_1_COLOR }}
+  exit
+ !
+ interface {{ WAN_INTERFACE_2_ID }}
+  tunnel-interface
+  encapsulation ipsec
+  color {{ WAN_INTERFACE_2_COLOR }}
+ exit
+ exit
+!
+ip route 0.0.0.0 0.0.0.0 {{ WAN_INTERFACE_1_GW_IP }}
+ip route 0.0.0.0 0.0.0.0 {{ WAN_INTERFACE_2_GW_IP }}
+!
+ip domain lookup
+ip name-server {{ DNS_SERVER1_IP }} {{ DNS_SERVER2_IP }}
+!
+router bgp {{ WAN_1_BGP_ASN }}
+ bgp log-neighbor-changes
+ no synchronization
+ no auto-summary
+ router-id {{ LAN_INTERFACE_1_IP }}
+ neighbor {{ WAN_INTERFACE_1_GW_IP }} remote-as {{ WAN_1_BGP_REMOTE_ASN }}
+!

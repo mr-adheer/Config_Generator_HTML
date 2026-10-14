@@ -1,0 +1,103 @@
+!#########################################################################################################
+!                                          INTERFACE TEMPLATES
+!#########################################################################################################
+!
+template TRUNK_FLEX_AP
+ switchport mode trunk
+ switchport nonegotiate
+ storm-control broadcast level 20
+ storm-control multicast level 20
+ storm-control action trap
+!
+template TRUNK_UPLINK
+ switchport mode trunk
+ switchport nonegotiate
+ storm-control broadcast level 10
+ storm-control multicast level 10
+ storm-control action trap
+ spanning-tree guard loop
+ ip dhcp snooping trust
+!
+template ACCESS_NOAUTH
+ switchport nonegotiate
+ switchport mode access
+ switchport access vlan 1
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+ load-interval 60
+ storm-control broadcast level 1
+ storm-control multicast level 1
+ storm-control action trap
+ switchport port-security
+ switchport port-security maximum 3
+ switchport port-security aging time 2
+ switchport port-security aging type inactivity
+ switchport port-security violation restrict
+ device-tracking attach-policy IPDT_POLICY
+ ip dhcp snooping limit rate 15
+!
+!
+!=======================================================================================================
+!                               INTERFACE CONFIGURATION EXAMPLE (WITH TEMPLATES)
+!=======================================================================================================
+
+!===================== ACCESS_PORT_CONFIG EXAMPLE =====================
+!
+interface range Gigabit0/1 - 24
+ description -> ACCESS --> <Endpoint_Type>
+    ! example: description -> ACCESS --> USER
+    ! example: description -> ACCESS --> PRINTER
+    ! example: description -> ACCESS --> MPLS_RTR1 | 10.1.1.1 -> G0/0
+ switchport access vlan {{ SWITCHPORT_ACCESS_VLAN_ID }}
+ switchport voice vlan {{ SWITCHPORT_VOICE_VLAN_ID }}
+ ip arp inspection trust
+ source template ACCESS_NOAUTH
+!
+!
+!
+!===================== UPLINK_PORT_CONFIG EXAMPLE =====================
+!
+interface range Gigabit0/25
+ description ** <LinkType> -->  <Neighbor_Name> | <Neighbor_IP> -> <Neighbor_Interface>
+    ! example : description  ** TRUNK --> 3RDFLR_SW | 10.10.10.2 -> Gig1/0/2
+ switchport mode trunk
+ switchport trunk allowed vlan {{ UPLINK_PORT_ALLOWED_VLAN_LIST }}
+ udld mode aggressive
+ ip arp inspection trust
+ source template TRUNK_UPLINK
+!
+!
+!
+!===== AP_PORT_CONFIG EXAMPLE =====
+!
+interface range Gigabit0/25
+ description ** <LinkType> --> <AP_Name> | <AP_IP>
+    ! example : description  ** TRUNK --> 2F_AP02 | 10.10.10.10
+ switchport trunk allowed vlan {{ AP_TRUNK_ALLOWED_VLAN_LIST }}
+ switchport trunk native vlan {{ AP_MGMT_VLAN }}
+ source template TRUNK_FLEX_AP
+!
+!
+!
+!========= PORT CHANNEL CONFIG EXAMPLE =========
+!
+interface range Gigabit0/25
+ description ** <LinkType> -->  <Neighbor_Name> | <Neighbor_IP> -> <Neighbor_Interface>
+    ! example : description  ** TRUNK --> 3RDFLR_SW | 10.10.10.2 -> Gig1/0/2
+ udld mode aggressive
+ channel-group 10 mode active
+!
+interface range Gigabit0/26
+ description ** <LinkType> -->  <Neighbor_Name> | <Neighbor_IP> -> <Neighbor_Interface>
+    ! example : description  ** TRUNK --> 3RDFLR_SW | 10.10.10.2 -> Gig1/0/3
+ udld mode aggressive
+ channel-group 10 mode active
+!
+!
+interface port-channel 10
+ description  ** <LinkType> -->  <Neighbor_Name> | <Neighbor_IP> -> <Neighbor_Interface>
+    ! example : description  ** TRUNK --> 3RDFLR_SW | 10.10.10.2 -> PO-10
+ source template TRUNK_UPLINK
+ switchport mode trunk
+ switchport trunk allowed vlan {{ UPLINK_PORT_ALLOWED_VLAN_LIST }}
+!

@@ -1,0 +1,49 @@
+!========================= DEVICE TRACKING ===============================
+device-tracking tracking auto-source
+!
+device-tracking policy IPDT_POLICY
+ tracking enable
+ no protocol udp
+ exit
+!
+device-sensor filter-list cdp list CDP_LIST
+ tlv name device-name
+ tlv name address-type
+ tlv name capabilities-type
+ tlv name platform-type
+ tlv name version-type
+ exit
+!
+device-sensor filter-spec cdp include list CDP_LIST
+!
+device-sensor filter-list lldp list LLDP_LIST
+ tlv name system-name
+ tlv name system-description
+ tlv name system-capabilities
+ exit
+!
+device-sensor filter-spec lldp include list LLDP_LIST
+!
+!
+device-sensor filter-list dhcp list DHCP_LIST
+ option name host-name
+ option name default-ip-ttl
+ option name requested-address
+ option name parameter-request-list
+ option name class-identifier
+ option name client-identifier
+ exit
+!
+device-sensor filter-spec dhcp include list DHCP_LIST
+!
+device-sensor accounting
+device-sensor notify all-changes
+!
+errdisable recovery cause all
+errdisable recovery interval 300
+!
+cdp run
+lldp run
+!
+!
+no macro auto monitor

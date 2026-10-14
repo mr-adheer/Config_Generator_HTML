@@ -1,0 +1,33 @@
+!==================== TEMPLATE VARIABLES (defaults) ====================
+{%- set DHCP_SNOOPING_VLANS = DHCP_SNOOPING_VLANS | default('10,20,30') -%}
+!=========================================================================
+!
+!==================== DHCP SNOOPING  ====================
+!
+no ip dhcp snooping information option
+ip dhcp snooping
+ip dhcp snooping vlan {{ DHCP_SNOOPING_VLANS }}
+!
+!
+!===================== INTERFACE TEMPLATES =====================
+!
+template TRUNK_UPLINK
+ switchport mode trunk
+ switchport nonegotiate
+ storm-control broadcast level 10
+ storm-control multicast level 10
+ storm-control action trap
+ spanning-tree guard loop
+ ip dhcp snooping trust
+!
+!
+!
+!===================== UPLINK_PORT_CONFIG EXAMPLE =====================
+!
+interface range Gigabit0/25
+ description ** <LinkType> -->  <Neighbor_Name> | <Neighbor_IP> -> <Neighbor_Interface>
+    ! example : description  ** TRUNK --> 3RDFLR_SW | 10.10.10.2 -> Gig1/0/2
+ switchport mode trunk
+ switchport trunk allowed vlan <vlan list>
+ udld mode aggressive
+ source template TRUNK_UPLINK
