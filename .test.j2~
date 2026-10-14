@@ -1,0 +1,13 @@
+{% if show_notes and notes %}
+  <div class="notes">
+    <h3>Notes</h3>
+    <p>{{notes}}</p>
+  </div>
+{% endif %}
+
+{% if show_terms %}
+  <div class="terms">
+    <h3>Terms and Conditions</h3>
+    <p>...</p>
+  </div>
+{% endif %}
